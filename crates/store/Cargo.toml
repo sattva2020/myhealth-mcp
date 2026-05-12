@@ -1,0 +1,17 @@
+[package]
+name        = "store"
+description = "Encrypted local SQLite storage with SQLCipher full-DB + column-level AES-GCM defense-in-depth (ADR-009)"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[dependencies]
+# rusqlite = { workspace = true }
+# aes-gcm  = { workspace = true }
+# argon2   = { workspace = true }
+# secrecy  = { workspace = true }
+# zeroize  = { workspace = true }
+# fhir-types = { path = "../fhir-types" }

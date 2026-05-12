@@ -1,0 +1,43 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/myhealth",
+    "crates/adapters",
+    "crates/store",
+    "crates/mcp-server",
+    "crates/consent-gateway",
+    "crates/audit-log",
+    "crates/fhir-types",
+]
+
+[workspace.package]
+version       = "0.1.0"
+edition       = "2021"
+rust-version  = "1.80"
+license       = "Apache-2.0"
+authors       = ["Ruslan Hryban <ruslan.griban@gmail.com>"]
+repository    = "https://github.com/sattva2020/myhealth-mcp"
+homepage      = "https://github.com/sattva2020/myhealth-mcp"
+documentation = "https://github.com/sattva2020/myhealth-mcp/tree/main/docs"
+readme        = "README.md"
+keywords      = ["fhir", "mcp", "health", "ehds", "privacy"]
+categories    = ["command-line-utilities"]
+
+# Shared dependency versions get filled in as crates start needing them.
+# Until then we keep this empty to avoid pinning versions we haven't verified.
+[workspace.dependencies]
+
+# Release profile tuned for small static binary deployments.
+[profile.release]
+lto             = "fat"
+codegen-units   = 1
+strip           = "symbols"
+panic           = "abort"
+opt-level       = 3
+debug           = false
+overflow-checks = false
+
+# Dev profile — fast iteration, no LTO.
+[profile.dev]
+opt-level = 0
+debug     = true

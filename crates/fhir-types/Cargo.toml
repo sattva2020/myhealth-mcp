@@ -1,0 +1,12 @@
+[package]
+name        = "fhir-types"
+description = "FHIR R4 strongly-typed models (re-export from fhirbolt + project additions)"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[dependencies]
+# fhirbolt = { workspace = true }

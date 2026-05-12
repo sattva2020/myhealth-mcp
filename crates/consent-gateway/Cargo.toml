@@ -1,0 +1,14 @@
+[package]
+name        = "consent-gateway"
+description = "OAuth 2.1 authorization server issuing scoped, time-bound tokens to AI agents"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[dependencies]
+# jsonwebtoken = { workspace = true }
+# oauth2       = { workspace = true }
+# audit-log    = { path = "../audit-log" }

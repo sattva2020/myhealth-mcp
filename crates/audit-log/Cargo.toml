@@ -1,0 +1,11 @@
+[package]
+name        = "audit-log"
+description = "Append-only, tamper-evident audit log with HMAC chain (ADR-005)"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[dependencies]

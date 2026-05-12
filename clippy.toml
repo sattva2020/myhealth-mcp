@@ -1,0 +1,3 @@
+# Project-wide clippy tweaks. Add lints here as patterns emerge.
+# Strict warnings are enforced via `just lint` (clippy --deny warnings),
+# not via committed config — so devs can still run `cargo check` freely.

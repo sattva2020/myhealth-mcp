@@ -1,0 +1,15 @@
+[package]
+name        = "mcp-server"
+description = "MCP protocol server exposing read-only tools to AI agents (ADR-003 stdio transport, ADR-004 OAuth)"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+
+[dependencies]
+# rmcp = { workspace = true }
+# store           = { path = "../store" }
+# consent-gateway = { path = "../consent-gateway" }
+# audit-log       = { path = "../audit-log" }

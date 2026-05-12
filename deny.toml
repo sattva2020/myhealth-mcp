@@ -1,0 +1,39 @@
+# cargo-deny policy
+# Run `cargo deny check` (or `just deny`) before each release.
+
+[licenses]
+version = 2
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+    "Zlib",
+    "CC0-1.0",
+    "MPL-2.0",       # tolerated; file-level copyleft only
+    "OpenSSL",
+]
+confidence-threshold = 0.93
+
+[bans]
+multiple-versions = "warn"
+wildcards         = "deny"
+deny = [
+    # Add crates we want to ban here. Example:
+    # { name = "openssl", reason = "prefer rustls or aws-lc-rs" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git      = "deny"
+allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
+allow-git        = []
+
+[advisories]
+version             = 2
+yanked              = "deny"
+ignore              = []

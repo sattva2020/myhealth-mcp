@@ -1,0 +1,23 @@
+[package]
+name          = "myhealth"
+description   = "MyHealth-Europe — self-hosted MCP server for EU health data"
+version.workspace       = true
+edition.workspace       = true
+rust-version.workspace  = true
+license.workspace       = true
+authors.workspace       = true
+repository.workspace    = true
+homepage.workspace      = true
+readme.workspace        = true
+
+[[bin]]
+name = "myhealth"
+path = "src/main.rs"
+
+[dependencies]
+# Sibling crates — wired in as they're implemented in later milestones.
+# adapters        = { path = "../adapters" }
+# store           = { path = "../store" }
+# mcp-server      = { path = "../mcp-server" }
+# consent-gateway = { path = "../consent-gateway" }
+# audit-log       = { path = "../audit-log" }
