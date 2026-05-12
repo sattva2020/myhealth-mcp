@@ -1,0 +1,39 @@
+# Rust build artifacts
+/target/
+**/target/
+**/*.rs.bk
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/WixTools/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local / secrets
+.env
+.env.local
+*.local
+secrets/
+*.key
+*.pem
+
+# Build/dist outputs
+dist/
+build/
+*.log
+
+# Local DB / runtime state (developer convenience)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+runtime-data/
