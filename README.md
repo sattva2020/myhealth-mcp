@@ -71,4 +71,4 @@ Per-file SPDX headers in every source file are the canonical answer for that ind
 
 ## Contact
 
-Ruslan Hryban — ruslan.griban@gmail.com — `linkedin.com/in/ruslan-hryban-ai`
+Ruslan Hryban — ruslan@griban.dev — <https://griban.dev/> — `linkedin.com/in/ruslan-hryban-ai`

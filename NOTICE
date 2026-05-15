@@ -61,6 +61,7 @@ in any release build.
 Contact
 -------
 
-  E-mail:    ruslan.griban@gmail.com
+  E-mail:    ruslan@griban.dev
+  Portfolio: https://griban.dev/
   Project:   https://griban.dev/projects/myhealth-europe/  (pre-award sub-path on applicant's developer site; dedicated domain may follow post-award)
   Code:      see Cargo.toml `repository` field

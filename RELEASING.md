@@ -67,7 +67,7 @@ cosign sign-blob `
 # Verify (the next person can also do this)
 cosign verify-blob `
     --bundle target/release/myhealth-v0.1.0-x86_64-pc-windows-msvc.bundle `
-    --certificate-identity ruslan.griban@gmail.com `
+    --certificate-identity ruslan@griban.dev `
     --certificate-oidc-issuer https://github.com/login/oauth `
     target/release/myhealth.exe
 ```

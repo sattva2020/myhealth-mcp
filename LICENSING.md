@@ -109,4 +109,4 @@ The project is funded (pending NLnet decision) under the European Union's Next G
 
 ## Questions
 
-For licensing questions email `ruslan.griban@gmail.com` or open an issue in the public repository once it is created. A project-specific forwarding address may be set up before the first stable release; the canonical contact remains `ruslan.griban@gmail.com` until then.
+For licensing questions email `ruslan@griban.dev` or open an issue in the public repository once it is created. A project-specific forwarding address may be set up before the first stable release; the canonical contact remains `ruslan@griban.dev` until then.
