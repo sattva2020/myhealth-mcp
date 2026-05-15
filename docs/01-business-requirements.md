@@ -1,203 +1,203 @@
 # 01 — Business Requirements Document (BRD)
 
-**Документ:** MyHealth-Europe — бізнес-вимоги
-**Версія:** 0.1 (initial draft)
-**Дата:** 12 травня 2026
-**Власник:** Руслан Грибан, Project Lead
-**Статус:** internal draft, pending team review
+**Document:** MyHealth-Europe — business requirements
+**Version:** 0.1 (initial draft)
+**Date:** 2026-05-12
+**Owner:** Ruslan Hryban, Project Lead
+**Status:** internal draft, pending team review
 
 ---
 
-## TL;DR (для комісії та нетехнічних читачів)
+## TL;DR (for the review committee / non-technical readers)
 
-Громадяни ЄС юридично мають право на свої медичні дані (з березня 2025 — за Регламентом EU Health Data Space, EHDS), але технічно не можуть скористатися ним так, як хочуть: піднести до своїх даних будь-якого AI-помічника на своїх умовах. Дані розкидані по vendor-силосах (Apple, Google, Epic, національні портали), AI-помічники прив'язані до того, хто володіє даними, і не існує стандартного потоку згоди для AI-доступу.
+EU citizens are legally entitled to their medical data (since March 2025, under the EU Health Data Space Regulation, EHDS), but in practice they cannot use that right the way they want to: bringing any AI assistant to their data on their own terms. The data is scattered across vendor silos (Apple, Google, Epic, national portals), AI assistants are tied to whoever owns the data, and there is no standard consent flow for AI access.
 
-MyHealth-Europe вирішує цю проблему: це open-source software, який кожен громадянин розгортає у себе, імпортує свої FHIR-записи з наявних джерел, і через відкритий протокол Model Context Protocol (MCP) надає будь-якому AI-агенту контрольований доступ. Проектна команда не торкається користувацьких даних взагалі — це архітектурна, не політична властивість.
+MyHealth-Europe solves this problem: it is open-source software that every citizen deploys on their own device, imports their FHIR records from existing sources, and through the open Model Context Protocol (MCP) grants any AI agent controlled access. The project team never touches user data — that is an architectural property, not a policy one.
 
-**Бізнес-результат за 9 місяців:** робочий, аудитований MCP-сервер, прийнятий щонайменше 3 незалежними downstream-проектами, з пілотом крос-кордонної health-навігації у одній з країн ЄС.
+**Business outcome at 9 months:** a working, audited MCP server adopted by at least 3 independent downstream projects, with a cross-border health-navigation pilot in one EU country.
 
-**Бізнес-результат довгостроково:** перший канонічний open-source MCP-сервер для health, embedded у регуляторне середовище EHDS і AI Act, готовий до прийняття державами-членами ЄС.
-
----
-
-## 1. Проблемний контекст
-
-### 1.1. Структурна проблема (1 рівень — користувач)
-
-Звичайний громадянин ЄС у 2026 році стикається з трьома одночасними викликами:
-
-**Виклик A: Lock-in даних.** Медичні записи фрагментовані між десятками систем — національні e-health (eHealth Україна, Estonia Digilugu, France Mon Espace Santé, Germany ePA), госпітальні портали (Epic MyChart, Cerner, національні аналоги), wearables (Apple Health, Google Health Connect, Fitbit, Garmin), страхові компанії, аптеки. Кожна точка експортує дані по-своєму, у різних форматах, із різним рівнем повноти. FHIR-стандарт прийнято на папері, але реальна інтероперабельність — латана.
-
-**Виклик B: Lock-in AI-помічників.** Коли вендор пропонує AI поверх health-даних (Apple Intelligence, Google Med-PaLM, Epic GPT-інтеграції), цей AI прив'язаний до інфраструктури і моделі вендора. Користувач не може підставити іншу модель — навіть локальну. «Шар інтелекту» захоплений тим, хто володіє даними.
-
-**Виклик C: Немає стандарту згоди для AI.** OAuth дає аплікаціям доступ до API. SMART on FHIR дає клінічним додаткам доступ до записів. Але немає widely-deployed стандарту для специфічного кейсу «AI-агент читає мої дані з таким scope, на такий період, з аудит-логом і явним відкликанням».
-
-### 1.2. Структурна проблема (2 рівень — держава і регулятор)
-
-ЄС у 2025 році прийняв два регуляторних інструменти, які створили право, але не операціоналізували його:
-
-- **Регламент EHDS** (чинний з березня 2025) дає громадянам право цифрового доступу до своїх health-даних і право поділитися ними з вибраним отримувачем. На практиці — кожна країна-член робить це по-своєму, без спільного інструмента кінцевого користувача.
-- **AI Act, Стаття 50** вимагає прозорості для AI у high-risk доменах. Хто і коли надав AI-агенту доступ до медичних даних? Як це аудитується? Інструмента немає.
-
-Без operational layer на рівні самого громадянина — обидва регламенти залишаються деклараціями.
-
-### 1.3. Крос-кордонний контекст (унікальний для ЄС)
-
-ЄС — це 27 окремих національних health-систем + асоційовані країни. Щодня по них рухаються:
-
-- Мільйони експатів-працівників, які лікуються в одній країні, а живуть у іншій.
-- ~4 млн українських біженців у країнах ЄС (станом на 2026), які мають медичну історію у двох-трьох системах одночасно.
-- Туристи, що отримують лікування за кордоном.
-- Медичні пенсіонери з крос-кордонним лікуванням.
-
-Жодна окрема національна система не може вирішити цю задачу — для цього потрібен інструмент *над* національними системами, що працює на стороні самого користувача.
+**Long-term business outcome:** the first canonical open-source MCP server for health, embedded in the regulatory environment of EHDS and the AI Act, ready for adoption by EU member states.
 
 ---
 
-## 2. Цільова аудиторія
+## 1. Problem context
 
-### 2.1. Первинна — кінцевий користувач (індивідуальний громадянин)
+### 1.1. Structural problem (level 1 — the user)
 
-**Хто:** будь-який мешканець ЄС або асоційованої країни, що має медичну історію більш ніж в одному джерелі та хоче безпечно скористатися AI-помічником.
+An ordinary EU citizen in 2026 faces three simultaneous challenges:
 
-**Розмір:** TAM ~500+ млн осіб (всі резиденти ЄС). SAM на першу фазу — крос-кордонна когорта (~30-50 млн осіб): експати, біженці, цифрові кочівники, туристи з хронічними станами.
+**Challenge A: Data lock-in.** Medical records are fragmented across dozens of systems — national e-health systems (eHealth Ukraine, Estonia Digilugu, France Mon Espace Santé, Germany ePA), hospital portals (Epic MyChart, Cerner, national equivalents), wearables (Apple Health, Google Health Connect, Fitbit, Garmin), insurance companies, pharmacies. Each endpoint exports data in its own way, in different formats, with varying degrees of completeness. The FHIR standard has been adopted on paper, but real interoperability is patchy.
 
-**Technical literacy:** очікуваний спектр — від «можу запустити Docker-контейнер» до «можу натиснути inst.exe». Reference UI клієнт орієнтований на нижню планку; CLI/Docker — на верхню.
+**Challenge B: AI-assistant lock-in.** When a vendor offers AI on top of health data (Apple Intelligence, Google Med-PaLM, Epic GPT integrations), that AI is bound to the vendor's infrastructure and model. The user cannot substitute another model — not even a local one. The "intelligence layer" is captured by whoever owns the data.
 
-**Перші 1000 користувачів (early adopters):** technically literate, privacy-conscious, активні в open-source / Mastodon / EU digital rights колах.
+**Challenge C: No consent standard for AI.** OAuth gives applications access to APIs. SMART on FHIR gives clinical apps access to records. But there is no widely-deployed standard for the specific case of "an AI agent reads my data with this scope, for this period, with an audit log and explicit revocation."
 
-### 2.2. Вторинна — downstream-впроваджувачі
+### 1.2. Structural problem (level 2 — the state and the regulator)
 
-**Хто:** розробники, інтегратори, цифрові урядові команди, телемед-стартапи, дослідницькі групи, цифрові кооперативи (наприклад, MiData у Швейцарії, Solid pods спільнота).
+In 2025 the EU adopted two regulatory instruments that created a right but did not operationalise it:
 
-**Розмір:** ~10-50 командних впроваджень у перший рік (consortium-target за грантом — 3 downstream-проекти, але реальна ціль вища).
+- **The EHDS Regulation** (in force since March 2025) gives citizens the right to digital access to their health data and the right to share it with a chosen recipient. In practice, every member state implements this in its own way, without a shared end-user tool.
+- **The AI Act, Article 50** requires transparency for AI in high-risk domains. Who and when granted an AI agent access to medical data? How is this audited? There is no tool.
 
-**Чого вони хочуть:** референсна реалізація, на якій можна побудувати локалізовану версію — національний health-кооператив, дослідницький інструмент, спеціалізований клінічний агент.
+Without an operational layer at the level of the citizen themselves, both regulations remain declarations.
 
-### 2.3. Третинна — регулятори і політики
+### 1.3. Cross-border context (unique to the EU)
 
-**Хто:** EHDS implementation teams у кожній державі-члені, національні data protection authorities, DG SANTE, DG CONNECT.
+The EU is 27 separate national health systems plus associated countries. Every day moving across them are:
 
-**Чого вони хочуть:** робочий приклад, як EHDS-права операціоналізуються на рівні громадянина, з аудит-логом, придатним для AI Act compliance.
+- Millions of expat workers, who receive treatment in one country while living in another.
+- Around 4 million Ukrainian refugees in EU countries (as of 2026), with medical history in two or three systems at once.
+- Tourists receiving treatment abroad.
+- Medical retirees with cross-border treatment.
 
----
-
-## 3. Цілі проекту
-
-### 3.1. Бізнес-цілі (9 місяців, у рамках NGI Commons Fund)
-
-| ID | Ціль | Метрика | Цільове значення |
-|----|------|---------|------------------|
-| G1 | Опублікувати MCP-сервер v1.0 | GitHub/Codeberg реліз, підписаний tag | До кінця M9 |
-| G2 | Пройти незалежний security audit | Публічний звіт; усі medium+ findings закриті | До кінця M8 |
-| G3 | Адопшн (downstream) | Кількість незалежних впроваджень | ≥3 за 12 міс після M9 |
-| G4 | Reference-пілот | End-to-end демо в одній з EU-країн | До кінця M7 |
-| G5 | Standards engagement | Участь у MCP working group / FHIR community | ≥1 PR прийнято в MCP spec, ≥1 спікер-слот на EU-event |
-
-### 3.2. Стратегічні цілі (24-36 місяців)
-
-| ID | Ціль | Як виглядає успіх |
-|----|------|-------------------|
-| S1 | MyHealth-Europe — Module №1 у CivicAI Bridge | DIGITAL-2027-AI заявка подана з MyHealth-Europe як working module proof |
-| S2 | Прийняття щонайменше одним національним e-health органом | Pilot або production deployment у EE/PL/DE/NL e-health |
-| S3 | Канонічний MCP-сервер для health-даних | Згаданий у MCP документації / специфікації як reference |
-| S4 | EHDS implementation tool | Принаймні одна держава-член посилається на MyHealth-Europe в EHDS implementation plan |
-
-### 3.3. Не-цілі (явно out of scope)
-
-- **Не клінічний інструмент.** Не дає діагнозів, не призначає лікування. Це data-layer.
-- **Не replacement національних e-health.** Не намагається замінити eHealth Україна, Digilugu, ePA. Доповнює, шарм поверх.
-- **Не комерційний SaaS у первинному релізі.** Якщо хтось захоче побудувати managed-hosting bisplay поверх ядра — це їх право (Apache 2.0 дозволяє), але самі ми SaaS не запускаємо в рамках проекту.
-- **Не EHR-replacement для клінік.** Це user-side, не provider-side.
+No single national system can solve this problem — it requires a tool *above* national systems that runs on the user's own device.
 
 ---
 
-## 4. Скоуп і обмеження
+## 2. Target audience
 
-### 4.1. Скоуп фази 1 (поточний грант, 9 міс)
+### 2.1. Primary — end user (individual citizen)
 
-**Включено:**
-- MCP-сервер ядро (read-only поверхня tools).
-- FHIR-адаптери для 3 джерел: eHealth Україна, Estonia Digilugu, Apple Health.
-- OAuth 2.1 consent gateway зі scope-by-record-type і time-bound токенами.
-- Аудит-лог (структурований, локальний).
+**Who:** any resident of the EU or an associated country who has medical history in more than one source and wants to safely use an AI assistant.
+
+**Size:** TAM ~500+ million people (all EU residents). SAM for the first phase — the cross-border cohort (~30-50 million people): expats, refugees, digital nomads, tourists with chronic conditions.
+
+**Technical literacy:** the expected spectrum runs from "I can run a Docker container" to "I can click inst.exe". The reference UI client targets the lower bar; CLI/Docker the upper.
+
+**First 1000 users (early adopters):** technically literate, privacy-conscious, active in open-source / Mastodon / EU digital-rights circles.
+
+### 2.2. Secondary — downstream adopters
+
+**Who:** developers, integrators, digital-government teams, telemedicine startups, research groups, digital cooperatives (for example, MiData in Switzerland, the Solid pods community).
+
+**Size:** ~10-50 team adoptions in the first year (the consortium target under the grant is 3 downstream projects, but the real ambition is higher).
+
+**What they want:** a reference implementation on which to build a localised version — a national health cooperative, a research tool, a specialised clinical agent.
+
+### 2.3. Tertiary — regulators and policymakers
+
+**Who:** EHDS implementation teams in each member state, national data protection authorities, DG SANTE, DG CONNECT.
+
+**What they want:** a working example of how EHDS rights are operationalised at the citizen level, with an audit log fit for AI Act compliance.
+
+---
+
+## 3. Project goals
+
+### 3.1. Business goals (9 months, within NGI Commons Fund)
+
+| ID | Goal | Metric | Target |
+|----|------|--------|--------|
+| G1 | Publish MCP server v1.0 | GitHub/Codeberg release, signed tag | By end of M9 |
+| G2 | Pass an independent security audit | Public report; all medium+ findings closed | By end of M8 |
+| G3 | Adoption (downstream) | Number of independent deployments | ≥3 within 12 months after M9 |
+| G4 | Reference pilot | End-to-end demo in one EU country | By end of M7 |
+| G5 | Standards engagement | Participation in MCP working group / FHIR community | ≥1 PR accepted into MCP spec, ≥1 speaker slot at an EU event |
+
+### 3.2. Strategic goals (24-36 months)
+
+| ID | Goal | What success looks like |
+|----|------|--------------------------|
+| S1 | MyHealth-Europe — Module No. 1 in CivicAI Bridge | DIGITAL-2027-AI proposal submitted with MyHealth-Europe as a working module proof |
+| S2 | Adoption by at least one national e-health authority | Pilot or production deployment in EE/PL/DE/NL e-health |
+| S3 | Canonical MCP server for health data | Mentioned in MCP documentation / specification as a reference |
+| S4 | EHDS implementation tool | At least one member state cites MyHealth-Europe in its EHDS implementation plan |
+
+### 3.3. Non-goals (explicitly out of scope)
+
+- **Not a clinical tool.** Does not provide diagnoses, does not prescribe treatment. It is a data layer.
+- **Not a replacement for national e-health.** Does not attempt to replace eHealth Ukraine, Digilugu, or ePA. It complements them, as a layer on top.
+- **Not a commercial SaaS in the initial release.** If somebody wants to build managed hosting on top of the core, that is their right (Apache 2.0 permits it), but we ourselves will not run a SaaS within the project.
+- **Not an EHR replacement for clinics.** It is user-side, not provider-side.
+
+---
+
+## 4. Scope and constraints
+
+### 4.1. Phase 1 scope (current grant, 9 months)
+
+**Included:**
+- MCP server core (read-only tools surface).
+- FHIR adapters for 3 sources: eHealth Ukraine, Estonia Digilugu, Apple Health.
+- OAuth 2.1 consent gateway with scope-by-record-type and time-bound tokens.
+- Audit log (structured, local).
 - Reference UI client (self-hosted web).
-- Reference cross-border navigation agent (UA-EE пілот).
-- Security audit + ремедіація.
-- Документація + replication kit.
+- Reference cross-border navigation agent (UA-EE pilot).
+- Security audit and remediation.
+- Documentation and replication kit.
 
-**Виключено з фази 1 (стрейтч / наступні фази):**
-- Write-back до джерел (запис нових records у портал).
-- Live API коннектори (не bulk export) для джерел, що їх підтримують.
-- Mobile-нативний клієнт (Android/iOS app).
-- Адаптери поза 3 запланованими (Польща, Німеччина, Франція, Google Health Connect — фаза 2).
-- Cluster-deployment для організацій (тільки single-user instance у фазі 1).
+**Excluded from phase 1 (stretch / later phases):**
+- Write-back to sources (writing new records into a portal).
+- Live API connectors (rather than bulk export) for sources that support them.
+- Native mobile client (Android/iOS app).
+- Adapters beyond the 3 planned (Poland, Germany, France, Google Health Connect — phase 2).
+- Cluster deployment for organisations (phase 1 ships single-user instances only).
 
-### 4.2. Регуляторні обмеження
+### 4.2. Regulatory constraints
 
-- **GDPR.** Хоча проект архітектурно мінімізує обробку (user — controller і processor одночасно у self-hosted режимі), компоненти, які торкаються логів і метаданих, повинні відповідати GDPR з боку downstream-впроваджувачів.
-- **EHDS.** Адаптери повинні поважати EHDS-сумісні формати експорту.
-- **AI Act Art. 50.** Аудит-лог структуровано так, щоб задовольнити вимогам transparency для AI-доступу.
-- **Українське законодавство.** Аплікант — резидент України; для UA-боку проект враховує Закон «Про захист персональних даних» та право пацієнта на отримання медичної інформації (Закон «Основи законодавства про охорону здоров'я», ст. 39).
+- **GDPR.** Although the project architecturally minimises processing (the user is both controller and processor in self-hosted mode), components that touch logs and metadata must comply with GDPR on the side of downstream adopters.
+- **EHDS.** Adapters must respect EHDS-compatible export formats.
+- **AI Act Art. 50.** The audit log is structured to satisfy transparency requirements for AI access.
+- **Ukrainian legislation.** The applicant is a resident of Ukraine; for the UA side the project takes into account the Law "On the Protection of Personal Data" and the patient's right to obtain medical information (Law "Fundamentals of the Healthcare Legislation", Article 39).
 
-### 4.3. Ресурсні обмеження
+### 4.3. Resource constraints
 
-- **Бюджет:** €50 000 lump sum (NLnet ліміт першої заявки).
-- **Команда:** 1 повний engineer (Грибан Р.) + 3 part-time співзасновники (координація, BD, domain advice) + 2 субконтрактори (FHIR-інжестер, security аудит).
-- **Тривалість:** 9 місяців від підписання MoU.
-- **Інфраструктура:** ~€3K на cloud/AI-tooling за весь період.
+- **Budget:** €50,000 lump sum (NLnet first-application cap).
+- **Team:** 1 full-time engineer (R. Hryban) + 3 part-time co-founders (coordination, BD, domain advice) + 2 subcontractors (FHIR ingester, security audit).
+- **Duration:** 9 months from MoU signature.
+- **Infrastructure:** ~€3K for cloud / AI tooling over the whole period.
 
 ---
 
 ## 5. Success Metrics (KPI)
 
-| Категорія | KPI | Базове значення | Цільове на M9 | Як вимірюємо |
-|-----------|-----|-----------------|---------------|--------------|
+| Category | KPI | Baseline | M9 target | How we measure |
+|----------|-----|----------|-----------|----------------|
 | Code health | Test coverage | 0% | ≥80% | CI report |
-| Code health | Security findings (high+) | n/a | 0 відкритих | Аудит-звіт |
-| Performance | FHIR-запит p99 latency | n/a | <200ms | Бенчмарк-suite |
+| Code health | Security findings (high+) | n/a | 0 open | Audit report |
+| Performance | FHIR query p99 latency | n/a | <200ms | Benchmark suite |
 | Adoption | GitHub stars | 0 | ≥500 | GitHub API |
-| Adoption | Незалежних downstream-проектів | 0 | ≥3 | Manual tracking |
-| Standards | MCP-spec contributions | 0 | ≥1 prijata | MCP repo |
-| Community | Documentation pageviews/міс | 0 | ≥2000 | Plausible/GoatCounter |
-| Pilot | End-to-end UA-EE сценарії, що проходять | 0 | ≥4 (з milestone M7) | Demo-сценарії |
+| Adoption | Independent downstream projects | 0 | ≥3 | Manual tracking |
+| Standards | MCP-spec contributions | 0 | ≥1 accepted | MCP repo |
+| Community | Documentation pageviews/month | 0 | ≥2000 | Plausible/GoatCounter |
+| Pilot | End-to-end UA-EE scenarios passing | 0 | ≥4 (from milestone M7) | Demo scenarios |
 
 ---
 
-## 6. Припущення і ризики (зведено)
+## 6. Assumptions and risks (summary)
 
-| Припущення | Якщо не справдиться |
+| Assumption | If it does not hold |
 |------------|---------------------|
-| MCP-протокол залишається стабільним | Pin-imo версію на M1; беремо участь у working group для прогнозу |
-| FHIR bulk-export з UA eHealth доступний без додаткових перешкод | Стартуємо з sandbox/synthetic даних; реальний bulk-export — у M+ |
-| NLnet прийме ФОП як applicant | Резервний план: ТОВ Кратос (Мирошников) як applicant |
-| Estonia/Germany pilot-партнер знаходиться | Pilot — best-effort; core deliverables не залежать |
-| 1 повний engineer вистачить на 9 міс об'єму | Скоуп фази 1 свідомо обмежений 3 джерелами і read-only |
+| The MCP protocol stays stable | Pin the version at M1; participate in the working group to anticipate changes |
+| FHIR bulk export from UA eHealth is available without additional barriers | Start with sandbox / synthetic data; real bulk export — at M+ |
+| NLnet accepts a Ukrainian sole proprietor (ФОП) as applicant | Fallback plan: TOV Kratos (Myroshnykov) as applicant |
+| An Estonia/Germany pilot partner can be found | The pilot is best-effort; core deliverables do not depend on it |
+| One full-time engineer is enough for 9 months of scope | Phase 1 scope is deliberately limited to 3 sources and read-only |
 
-Детальніше — у `06-architecture.md` (deployment ризики) і `08-threat-model.md` (security ризики).
-
----
-
-## 7. Стейкхолдери і ролі
-
-| Стейкхолдер | Інтерес | Як ми його обслуговуємо |
-|-------------|---------|------------------------|
-| Кінцевий користувач | Контроль над даними, простота | Self-hosted, чіткий consent UI |
-| NLnet/NGI | Цифровий commons, EU-fit | Apache 2.0, EHDS-aligned, audit |
-| EHDS implementation teams | Operational tool для citizen rights | Replication kit, документація |
-| Downstream developers | Робоча база для форку | Чіткі інтерфейси, документовані схеми |
-| Анти-аудитор | Достовірне privacy claim | Threat model, public audit report |
-| Грантова команда (4 особи) | Успішний грант, sustainability | Поточний драфт + цей workspace |
+More detail in `06-architecture.md` (deployment risks) and `08-threat-model.md` (security risks).
 
 ---
 
-## 8. Відкриті бізнес-питання
+## 7. Stakeholders and roles
 
-1. **Sustainability post-grant.** Як проект живе після 9 міс? Опції: повторна NGI-заявка на phase 2 (NLnet дозволяє); DIGITAL-EU грант через CivicAI Bridge; community-driven підтримка; managed-hosting комерційний spin-off (із збереженням Apache-ядра). Рішення — після M6.
-2. **Юр. структура для повторних грантів.** ФОП Грибан Р. для phase 1, але для phase 2 (€100K+) може знадобитися ТОВ. Рішення — у M5-M6 разом із Мирошниковим.
-3. **Trademark / domain.** Чи реєструвати myhealth-europe.eu як trademark? Юристська консультація — на M2-M3 (€500-€1500 з бюджету outreach).
-4. **Зв'язки з EU Health Data Space office.** Чи робити offiziale outreach у DG SANTE EHDS team? Якщо так — коли і чиїми руками. Рішення — Мирошников + Грибан до M3.
+| Stakeholder | Interest | How we serve them |
+|-------------|----------|-------------------|
+| End user | Control over their data, simplicity | Self-hosted, clear consent UI |
+| NLnet/NGI | Digital commons, EU-fit | Apache 2.0, EHDS-aligned, audited |
+| EHDS implementation teams | Operational tool for citizen rights | Replication kit, documentation |
+| Downstream developers | A working base for forking | Clear interfaces, documented schemas |
+| Independent auditor | Credible privacy claim | Threat model, public audit report |
+| Grant team (4 people) | Successful grant, sustainability | The current draft plus this workspace |
 
 ---
 
-*Наступні документи: [02-prd.md](02-prd.md) розгортає функціональні і нефункціональні вимоги; [03-data-flow.md](03-data-flow.md) дає критично важливу для розуміння проекту картину руху даних.*
+## 8. Open business questions
+
+1. **Sustainability post-grant.** How does the project live after 9 months? Options: a follow-on NGI proposal for phase 2 (NLnet allows it); a DIGITAL-EU grant via CivicAI Bridge; community-driven support; a managed-hosting commercial spin-off (while preserving the Apache core). Decision after M6.
+2. **Legal structure for follow-on grants.** Sole proprietor (ФОП) Hryban R. for phase 1, but for phase 2 (€100K+) a TOV (LLC) may be required. Decision in M5-M6 together with Myroshnykov.
+3. **Trademark / domain.** Should "MyHealth-Europe" be registered as a trademark and should we buy a dedicated domain (`myhealth-europe.eu`, `.org` or `.health`)? **Pre-award:** project URL = `https://griban.dev/projects/myhealth-europe/` (sub-path on the applicant's existing site — €0). **Post-award:** dedicated domain optional (€10-15/year), trademark — with legal advice in M2-M3 (€500-€1500 from the outreach budget).
+4. **Liaison with the EU Health Data Space office.** Should we do official outreach to the DG SANTE EHDS team? If so — when and by whom. Decision: Myroshnykov + Hryban by M3.
+
+---
+
+*Next documents: [02-prd.md](02-prd.md) elaborates the functional and non-functional requirements; [03-data-flow.md](03-data-flow.md) provides the data-flow picture that is critical for understanding the project.*

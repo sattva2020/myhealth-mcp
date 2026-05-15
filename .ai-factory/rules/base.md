@@ -1,27 +1,27 @@
-# Базові правила проекту MyHealth-Europe
+# Base rules for the MyHealth-Europe project
 
-> Project conventions для всіх AI-агентів. Вихідного коду ще немає (pre-implementation phase),
-> тому правила нижче — це plan-based conventions з docs/, які стануть load-bearing після старту M1.
-> Після появи реального Rust-коду цей файл уточнюється через `/aif-evolve`.
+> Project conventions for all AI agents. There is no source code yet (pre-implementation phase),
+> so the rules below are plan-based conventions derived from docs/ that become load-bearing once M1 starts.
+> Once real Rust code lands, this file is refined via `/aif-evolve`.
 
-## Іменування
+## Naming
 
-| Сутність | Конвенція | Приклад |
-|----------|-----------|---------|
-| Crate / модуль | `snake_case` | `myhealth_core`, `fhir_adapter_ua` |
-| Файли `.rs` | `snake_case.rs` | `consent_gateway.rs`, `audit_log.rs` |
-| Структури / enums / traits | `PascalCase` | `ConsentToken`, `FhirResource`, `AuditEvent` |
-| Функції / методи / змінні | `snake_case` | `validate_token`, `get_observations` |
-| Константи | `SCREAMING_SNAKE_CASE` | `DEFAULT_TOKEN_TTL_SECONDS` |
-| MCP tools | `snake_case` через двокрапку для namespace | `get_observations`, `search_records` |
+| Entity | Convention | Example |
+|--------|------------|---------|
+| Crate / module | `snake_case` | `myhealth_core`, `fhir_adapter_ua` |
+| `.rs` files | `snake_case.rs` | `consent_gateway.rs`, `audit_log.rs` |
+| Structs / enums / traits | `PascalCase` | `ConsentToken`, `FhirResource`, `AuditEvent` |
+| Functions / methods / variables | `snake_case` | `validate_token`, `get_observations` |
+| Constants | `SCREAMING_SNAKE_CASE` | `DEFAULT_TOKEN_TTL_SECONDS` |
+| MCP tools | `snake_case`, with `:` for namespaces | `get_observations`, `search_records` |
 | OAuth scopes | `read:<resource>:<filter>` | `read:observations:lab`, `read:medications:active` |
-| FHIR resource types | `PascalCase` (як у FHIR R4 spec) | `Observation`, `MedicationStatement` |
-| Документи | `NN-kebab-case.md` (з номером) | `01-business-requirements.md` |
+| FHIR resource types | `PascalCase` (as in the FHIR R4 spec) | `Observation`, `MedicationStatement` |
+| Documents | `NN-kebab-case.md` (with a number) | `01-business-requirements.md` |
 | ADR | `docs/adr/NNNN-kebab-case.md` | `docs/adr/0009-encryption-at-rest.md` |
 
-## Структура коду (планована)
+## Code structure (planned)
 
-Workspace із multi-crate layout:
+A workspace with a multi-crate layout:
 
 ```
 myhealth-europe/
@@ -41,94 +41,94 @@ myhealth-europe/
 │       └── adapter-generic-r4/  # Generic FHIR R4
 ├── installers/                  # tauri-bundler configs (.msi/.dmg/.AppImage/.deb)
 ├── docker/                      # Dockerfile, compose.yml
-├── docs/                        # Документація (BRD/PRD/architecture/threat-model/ADRs)
+├── docs/                        # Documentation (BRD/PRD/architecture/threat-model/ADRs)
 └── tests/                       # Integration + property-based + benchmarks
 ```
 
-Жорсткі межі залежностей (deny circles):
-- `adapters/*` → `myhealth-core` (тільки)
+Hard dependency boundaries (deny cycles):
+- `adapters/*` → `myhealth-core` (only)
 - `myhealth-store` → `myhealth-core`
 - `myhealth-mcp` → `myhealth-store`, `myhealth-consent`, `myhealth-audit`, `myhealth-core`
 - `myhealth-consent` → `myhealth-audit`, `myhealth-core`
-- `myhealth-ui` → усі crates
-- `myhealth-cli` → усі crates крім `myhealth-ui`
+- `myhealth-ui` → all crates
+- `myhealth-cli` → all crates except `myhealth-ui`
 
-## Обробка помилок
+## Error handling
 
-- **Crate-rivenni error types через `thiserror`** — кожен crate має свій `Error`-enum, без `Box<dyn Error>` у публічному API.
-- **`anyhow::Result` тільки у `myhealth-cli`** — бінарі можуть використовувати `anyhow` для контексту, бібліотечні crates — ні.
-- **Жодного `.unwrap()` / `.expect()` у production code path.** Дозволено лише у тестах і у `main.rs` для panic-on-startup config errors.
-- **PHI ніколи не потрапляє у `Display`/`Debug` для error types.** Помилки містять ідентифікатори (record id, resource type), не вміст.
-- **`Result<T, E>`-first.** `panic!`/`unreachable!` лише з explicit safety-коментарем поряд.
+- **Crate-local error types via `thiserror`** — every crate has its own `Error` enum, no `Box<dyn Error>` in the public API.
+- **`anyhow::Result` only in `myhealth-cli`** — binaries may use `anyhow` for context; library crates may not.
+- **No `.unwrap()` / `.expect()` in production code paths.** Allowed only in tests and in `main.rs` for panic-on-startup config errors.
+- **PHI never lands in `Display`/`Debug` of error types.** Errors carry identifiers (record id, resource type), not contents.
+- **`Result<T, E>` first.** `panic!`/`unreachable!` only with an explicit safety comment alongside.
 
-## Логування і телеметрія
+## Logging and telemetry
 
-- **`tracing` для structured logs** з JSON output через `tracing-subscriber`.
-- **Log levels:** `error` (потребує уваги), `warn` (нештатна ситуація, але продовжуємо), `info` (state transitions), `debug` (developer), `trace` (verbose).
-- **No PHI у logs.** Замість `tracing::info!("imported {bundle:?}")` — `tracing::info!(record_count = bundle.entries.len(), source = %source_name, "import completed")`.
-- **No telemetry by default.** `telemetry=disabled` у default config (NFR-S5).
-- **Audit-events (grant/deny/revoke/read) — окремий append-only канал**, не звичайний `tracing`-лог.
+- **`tracing` for structured logs** with JSON output via `tracing-subscriber`.
+- **Log levels:** `error` (needs attention), `warn` (off-nominal but continuing), `info` (state transitions), `debug` (developer), `trace` (verbose).
+- **No PHI in logs.** Instead of `tracing::info!("imported {bundle:?}")`, use `tracing::info!(record_count = bundle.entries.len(), source = %source_name, "import completed")`.
+- **No telemetry by default.** `telemetry=disabled` in the default config (NFR-S5).
+- **Audit events (grant/deny/revoke/read) — a separate append-only channel**, not the regular `tracing` log.
 
-## Шифрування і робота з секретами
+## Encryption and secrets handling
 
-- **`secrecy::SecretString` / `secrecy::SecretVec` для всіх ключів і passphrase.** Ніколи не `String` для секретів.
-- **`zeroize` для structs з sensitive data** — `#[derive(ZeroizeOnDrop)]` де можливо.
-- **Argon2id KDF** з memory ≥64MB, iterations ≥3, parallelism ≥4 (FR-2.2).
-- **AES-256-GCM з random nonce** для application-layer column encryption.
-- **SQLCipher через `rusqlite` feature `bundled-sqlcipher`** для full-DB encryption baseline.
-- **Жодного hardcoded key / passphrase / token** у коді, тестах або фікстурах. Тестові ключі — generated per-test.
-- **CI secret scanning** через Trufflehog/Gitleaks pre-commit і у GitHub Actions.
+- **`secrecy::SecretString` / `secrecy::SecretVec` for all keys and passphrases.** Never `String` for secrets.
+- **`zeroize` for structs holding sensitive data** — `#[derive(ZeroizeOnDrop)]` where possible.
+- **Argon2id KDF** with memory ≥64 MB, iterations ≥3, parallelism ≥4 (FR-2.2).
+- **AES-256-GCM with random nonce** for application-layer column encryption.
+- **SQLCipher via `rusqlite` feature `bundled-sqlcipher`** for the full-DB encryption baseline.
+- **No hardcoded key / passphrase / token** in code, tests, or fixtures. Test keys are generated per test.
+- **CI secret scanning** via Trufflehog/Gitleaks on pre-commit and in GitHub Actions.
 
-## Тестування
+## Testing
 
-- **`cargo test` для unit + integration.**
-- **`proptest` для property-based** на FHIR-парсерах, OAuth flows, encryption roundtrips.
-- **`criterion` для benchmarks** — `cargo bench` (NFR-P1: p99 <200ms).
-- **Integration tests:** `tests/` директорія верхнього рівня, із real SQLCipher store (без mocks для шифрування).
-- **Coverage targets:** ≥80% lines, ≥70% branches (NFR-M1). Tarpaulin або grcov у CI.
-- **Раpsberry Pi 4 smoke test у CI** — `cross`-build для `aarch64-unknown-linux-gnu` + QEMU run.
+- **`cargo test` for unit + integration.**
+- **`proptest` for property-based testing** of FHIR parsers, OAuth flows, encryption roundtrips.
+- **`criterion` for benchmarks** — `cargo bench` (NFR-P1: p99 <200 ms).
+- **Integration tests:** the top-level `tests/` directory, with a real SQLCipher store (no mocks for encryption).
+- **Coverage targets:** ≥80% lines, ≥70% branches (NFR-M1). Tarpaulin or grcov in CI.
+- **Raspberry Pi 4 smoke test in CI** — `cross`-build for `aarch64-unknown-linux-gnu` + QEMU run.
 
-## Linting і форматування
+## Linting and formatting
 
-- **`rustfmt` — обов'язково перед commit** (pre-commit hook + CI check).
-- **`clippy` з `-D warnings` на main** (NFR-M2). Дозволено `#[allow(...)]` лише з коментарем-обґрунтуванням.
-- **`cargo-audit` у CI** — fail на нові CVE.
-- **`cargo-deny` у CI** — policy для ліцензій, sources, advisories, banned crates.
+- **`rustfmt` is mandatory before commit** (pre-commit hook + CI check).
+- **`clippy` with `-D warnings` on main** (NFR-M2). `#[allow(...)]` is allowed only with a justification comment.
+- **`cargo-audit` in CI** — fails on a new CVE.
+- **`cargo-deny` in CI** — policy for licenses, sources, advisories, banned crates.
 
-## Документація коду
+## Code documentation
 
-- **100% public API має doc comments (`///`)** (NFR-M3). Внутрішні `fn` / `struct` — за потреби.
-- **`#![deny(missing_docs)]` на crate-level** для бібліотечних crates.
-- **Doctests obov'yazkovi для нетривіальних публічних функцій** — приклад використання у docstring.
-- **ADR для всіх non-trivial choices** у `docs/adr/NNNN-kebab-case.md`.
+- **100% of the public API has doc comments (`///`)** (NFR-M3). Internal `fn`/`struct` items only as needed.
+- **`#![deny(missing_docs)]` at crate level** for library crates.
+- **Doctests are mandatory for non-trivial public functions** — usage example in the docstring.
+- **ADRs for all non-trivial choices** in `docs/adr/NNNN-kebab-case.md`.
 
-## Архітектурні інваріанти (захист на рівні коду)
+## Architectural invariants (enforced at the code level)
 
-- **No outbound network з server-process** окрім explicit user-initiated calls. CI має network egress monitoring.
-- **PHI ніколи не leaves boundary без consent token validation.** Кожен MCP tool handler починається з `consent.verify(token, scope)?`.
-- **Append-only audit log** — `INSERT`-only, без `UPDATE` / `DELETE` на audit table.
-- **Resources read-only у phase 1.** Write-back tools — out of scope (FR-3.8).
-- **No PHI у backup-файлах без шифрування.** `myhealth backup` створює лише encrypted blob.
+- **No outbound network from the server process** beyond explicit user-initiated calls. CI has network egress monitoring.
+- **PHI never leaves the boundary without consent token validation.** Every MCP tool handler starts with `consent.verify(token, scope)?`.
+- **Append-only audit log** — `INSERT`-only, no `UPDATE`/`DELETE` on the audit table.
+- **Resources are read-only in phase 1.** Write-back tools are out of scope (FR-3.8).
+- **No PHI in unencrypted backup files.** `myhealth backup` produces only an encrypted blob.
 
 ## Git / commits
 
-- **Conventional Commits** (`/aif-commit` для генерації повідомлень).
-- **Гілки:** `feature/` для нових фіч, `fix/` для багфіксів. Поточне налаштування `git.create_branches: false` → `/aif-plan full` залишається на поточній гілці.
+- **Conventional Commits** (`/aif-commit` to generate messages).
+- **Branches:** `feature/` for new features, `fix/` for bug fixes. The current `git.create_branches: false` setting → `/aif-plan full` stays on the current branch.
 - **Base branch:** `main`.
-- **No `--no-verify` / `--no-gpg-sign`** без явного дозволу.
-- **Signed releases** через `cosign` (NFR-S4).
+- **No `--no-verify` / `--no-gpg-sign`** without explicit permission.
+- **Signed releases** via `cosign` (NFR-S4).
 
-## i18n / Мовні правила
+## i18n / Language rules
 
-- **Документація:** українська (вихідна), з можливим перекладом на EN/EE/DE/PL у v1.0 (FR-5.9).
-- **Технічні терміни (Rust, FHIR, OAuth, MCP, SQLite, etc.) — у оригіналі**, не транслітеруються.
-- **UI strings:** через `fluent` або `rust-i18n` (визначиться у M6); ніколи не hard-coded у компонентах.
-- **Error messages для end-users:** локалізовані; для developers / logs — English.
+- **Documentation:** English (current, after the 2026-05-15 translation pass), with possible localisations to UA/EE/DE/PL in v1.0 (FR-5.9).
+- **Technical terms (Rust, FHIR, OAuth, MCP, SQLite, etc.) — keep their original form**, do not transliterate.
+- **UI strings:** via `fluent` or `rust-i18n` (to be decided in M6); never hard-coded in components.
+- **Error messages for end users:** localised; for developers / logs — English.
 
-## Залежності і supply chain
+## Dependencies and supply chain
 
-- **Преферуємо crates з audit history** (Signal, Bitwarden, Tokio ecosystem).
-- **Нові dependencies — review через ADR** якщо вони у `[dependencies]` основного crate (не dev/build).
-- **`cargo-cyclonedx` для SBOM** з кожним release у CycloneDX format.
-- **Dependabot** для security updates.
-- **SLSA Level 2** як ціль для release pipeline.
+- **Prefer crates with audit history** (Signal, Bitwarden, Tokio ecosystem).
+- **New dependencies require an ADR review** if they land in `[dependencies]` of a primary crate (not dev/build).
+- **`cargo-cyclonedx` for SBOM** with every release in CycloneDX format.
+- **Dependabot** for security updates.
+- **SLSA Level 2** as the target for the release pipeline.

@@ -11,12 +11,12 @@ language:
   # Language for AI-agent communication (prompts, questions, explanations)
   # Options: en, ru, de, fr, es, zh, ja, ko, pt, it
   # Default: en
-  ui: uk
+  ui: en
 
   # Language for generated artifacts (plans, specs, documentation)
   # Options: en, ru, de, fr, es, zh, ja, ko, pt, it
   # Default: en (same as ui if not specified)
-  artifacts: uk
+  artifacts: en
 
   # How to handle technical terms in translations
   # Options:
@@ -192,7 +192,9 @@ rules:
 
   # Area-specific rules files
   # These are created by /aif-rules when you add area-specific conventions
-  # Uncomment and add paths as needed:
+  security: .ai-factory/rules/security.md
+  fhir: .ai-factory/rules/fhir.md
+  mcp: .ai-factory/rules/mcp.md
   # api: .ai-factory/rules/api.md
   # frontend: .ai-factory/rules/frontend.md
   # backend: .ai-factory/rules/backend.md

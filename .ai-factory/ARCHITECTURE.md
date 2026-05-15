@@ -1,40 +1,40 @@
-# Архітектура: Modular Monolith + Hexagonal (Ports & Adapters)
+# Architecture: Modular Monolith + Hexagonal (Ports & Adapters)
 
-## Огляд
+## Overview
 
-MyHealth-Europe реалізується як **Modular Monolith** — єдиний Rust-binary (або multi-stage Docker container), що складається з кількох незалежних crate-модулів у Cargo workspace, з explicit публічним API кожного crate (`lib.rs`) і заборонами на cross-module reach-in.
+MyHealth-Europe is implemented as a **Modular Monolith** — a single Rust binary (or multi-stage Docker container) made of several independent crate-modules in a Cargo workspace, with an explicit public API per crate (`lib.rs`) and prohibitions on cross-module reach-in.
 
-Поверх модульності накладається **Hexagonal (Ports & Adapters)** патерн: для FHIR-імпортерів, MCP-транспортів, OAuth-storage backends, audit-sinks ми визначаємо **порти** (Rust traits у `myhealth-core`) і реалізуємо їх як **адаптери** (окремі crates у `crates/adapters/*` або модулі у профільних crates). Це дозволяє додавати нову країну (новий FHIR-адаптер) або новий MCP-транспорт без змін у ядрі та з повним unit-test покриттям через mock-адаптери.
+On top of modularity we layer the **Hexagonal (Ports & Adapters)** pattern: for FHIR importers, MCP transports, OAuth storage backends, and audit sinks we define **ports** (Rust traits in `myhealth-core`) and implement them as **adapters** (separate crates in `crates/adapters/*` or modules inside the domain-specific crates). This lets us add a new country (a new FHIR adapter) or a new MCP transport without touching the core, with full unit-test coverage via mock adapters.
 
-Чому ця комбінація для **цього** проекту:
-- Single static binary <15MB — core value prop для Йоганн-persona; microservices виключені архітектурно.
-- 1 engineer + 1 part-time contributor — модульний моноліт дає швидкість моноліту і дисципліну меж модулів, без operational overhead мікросервісів.
-- Trust boundaries (Consent Gateway → Store, MCP → Consent → Store) природно лягають на Hexagonal port boundaries — кожна границя довіри = окремий trait у `myhealth-core`.
-- Future-extraction ready: якщо у phase 2 знадобиться винести Audit Log у окремий процес для compliance — workspace-структура це дозволяє без рефакторингу домену.
+Why this combination for **this** project:
+- Single static binary <15 MB — core value prop for the Johann persona; microservices are architecturally excluded.
+- 1 engineer + 1 part-time contributor — a modular monolith gives the speed of a monolith and module-boundary discipline, without the operational overhead of microservices.
+- Trust boundaries (Consent Gateway → Store, MCP → Consent → Store) map naturally onto Hexagonal port boundaries — every trust boundary = one trait in `myhealth-core`.
+- Future-extraction ready: if phase 2 ever requires extracting the Audit Log into a separate process for compliance reasons, the workspace structure makes it possible without refactoring the domain.
 
-## Decision Rationale
+## Decision rationale
 
-- **Project type:** Self-hosted MCP-сервер для health-даних, single-binary deployment, multi-component (FHIR adapters / Local Store / MCP Server / Consent Gateway / Audit Log / UI Backend).
+- **Project type:** Self-hosted MCP server for health data, single-binary deployment, multi-component (FHIR adapters / Local Store / MCP Server / Consent Gateway / Audit Log / UI Backend).
 - **Tech stack:** Rust stable 1.80+, `tokio` async runtime, `axum`, `rmcp`, `rusqlite` + SQLCipher, `fhirbolt`.
-- **Team size:** 1 engineer × 6 PM + 1 part-time contributor × 2 PM (FHIR-адаптери).
-- **Domain complexity:** Medium-High (FHIR R4 schema, OAuth 2.1 з PKCE, encryption-at-rest, MCP protocol, untrusted-client model).
-- **Scale:** Single-user per deployment; horizontal scaling — за рахунок replicating self-hosted instances, не shared infra.
-- **Key factor:** Архітектурний інваріант "single static binary, no phone-home" вимагає monolith. Множина незалежних адаптерів (FHIR sources, MCP transports) і чіткі trust boundaries вимагають Hexagonal.
+- **Team size:** 1 engineer × 6 PM + 1 part-time contributor × 2 PM (FHIR adapters).
+- **Domain complexity:** Medium-High (FHIR R4 schema, OAuth 2.1 with PKCE, encryption-at-rest, MCP protocol, untrusted-client model).
+- **Scale:** Single user per deployment; horizontal scaling comes from replicating self-hosted instances, not shared infrastructure.
+- **Key factor:** The architectural invariant "single static binary, no phone-home" requires a monolith. The plurality of independent adapters (FHIR sources, MCP transports) and the sharp trust boundaries require Hexagonal.
 
-## Folder Structure
+## Folder structure
 
 ```
 myhealth-europe/
 ├── Cargo.toml                       # workspace root: [workspace] members + lints + profile
-├── Cargo.lock                       # checked in (бінарний проект)
+├── Cargo.lock                       # checked in (binary project)
 ├── rust-toolchain.toml              # pin Rust 1.80+ stable
 │
 ├── crates/
-│   ├── myhealth-core/               # Core domain (DEPENDENCIES: none, крім serde)
+│   ├── myhealth-core/               # Core domain (DEPENDENCIES: none, except serde)
 │   │   ├── Cargo.toml
 │   │   └── src/
-│   │       ├── lib.rs               # PUBLIC API: re-exports з ports/, model/, error
-│   │       ├── model/               # Domain types (FHIR-aligned, без serialization-specific)
+│   │       ├── lib.rs               # PUBLIC API: re-exports from ports/, model/, error
+│   │       ├── model/               # Domain types (FHIR-aligned, no serialization-specific code)
 │   │       │   ├── mod.rs
 │   │       │   ├── observation.rs
 │   │       │   ├── medication.rs
@@ -55,7 +55,7 @@ myhealth-europe/
 │   │       ├── encryption/          # AES-GCM column-level encryption helpers
 │   │       ├── migrations/          # Schema migrations (versioned, reversible)
 │   │       ├── queries/             # Prepared statements per resource type
-│   │       └── tests/               # Integration tests з real SQLCipher (без mocks)
+│   │       └── tests/               # Integration tests with real SQLCipher (no mocks)
 │   │
 │   ├── myhealth-mcp/                # MCP server (rmcp-based)
 │   │   └── src/
@@ -72,7 +72,7 @@ myhealth-europe/
 │   │       ├── lib.rs               # PUBLIC API: ConsentGateway::new(store, audit)
 │   │       ├── oauth/               # OAuth 2.1 + PKCE flow
 │   │       ├── token/               # JWT issuance/validation (HMAC-SHA256)
-│   │       ├── scope/               # Scope parsing і matching
+│   │       ├── scope/               # Scope parsing and matching
 │   │       └── prompts/             # UI consent prompt API
 │   │
 │   ├── myhealth-audit/              # ADAPTER for trait AuditSink
@@ -101,62 +101,62 @@ myhealth-europe/
 │
 ├── installers/                      # tauri-bundler configs (.msi/.dmg/.AppImage/.deb)
 ├── docker/                          # Dockerfile (multi-stage), compose.yml
-├── docs/                            # Pre-implementation документація + ADRs
+├── docs/                            # Pre-implementation documentation + ADRs
 │   └── adr/                         # Architecture Decision Records
 └── tests/                           # Cross-crate integration tests + benchmarks
     ├── e2e/                         # End-to-end flows (import → consent → MCP read)
-    ├── property/                    # proptest для FHIR/OAuth/encryption
-    └── benches/                     # criterion benchmarks (NFR-P1: p99 <200ms)
+    ├── property/                    # proptest for FHIR/OAuth/encryption
+    └── benches/                     # criterion benchmarks (NFR-P1: p99 <200 ms)
 ```
 
-## Dependency Rules
+## Dependency rules
 
-Cargo workspace enforce-ить через `[dependencies]` секції; додатково перевіряється `cargo-deny`-rule і review.
+The Cargo workspace enforces these via `[dependencies]` sections; they are additionally checked by a `cargo-deny` rule and during review.
 
-**Дозволено (✅):**
+**Allowed (✅):**
 
-- ✅ `myhealth-core` → нічого з workspace (тільки std + serde + thiserror)
+- ✅ `myhealth-core` → nothing from the workspace (only std + serde + thiserror)
 - ✅ `myhealth-store` → `myhealth-core` (impl trait RecordStore + ConsentStore)
 - ✅ `myhealth-audit` → `myhealth-core` (impl trait AuditSink)
 - ✅ `myhealth-consent` → `myhealth-core`, `myhealth-audit`
 - ✅ `myhealth-mcp` → `myhealth-core`, `myhealth-store`, `myhealth-consent`, `myhealth-audit`
 - ✅ `myhealth-ui` → `myhealth-core`, `myhealth-store`, `myhealth-consent`, `myhealth-audit`
-- ✅ `crates/adapters/*` → **тільки** `myhealth-core` (impl trait FhirImporter)
-- ✅ `myhealth-cli` → усі crates (composition root)
+- ✅ `crates/adapters/*` → **only** `myhealth-core` (impl trait FhirImporter)
+- ✅ `myhealth-cli` → all crates (composition root)
 
-**Заборонено (❌):**
+**Forbidden (❌):**
 
-- ❌ `myhealth-core` → будь-який інший workspace crate
+- ❌ `myhealth-core` → any other workspace crate
 - ❌ `crates/adapters/*` → `myhealth-store`, `myhealth-mcp`, `myhealth-consent`, `myhealth-audit`, `myhealth-ui`
-- ❌ Адаптер → інший адаптер (`adapter-ua-nszu` → `adapter-ee-digilugu`)
-- ❌ Будь-який crate → внутрішні модулі іншого crate (не `lib.rs`-API)
-- ❌ `myhealth-mcp` → `myhealth-ui` (MCP не залежить від UI)
-- ❌ `myhealth-ui` → `myhealth-mcp` (UI не вимагає MCP-stack для запуску setup wizard)
-- ❌ Cycle: `A → B → A` будь-якої довжини
+- ❌ Adapter → another adapter (`adapter-ua-nszu` → `adapter-ee-digilugu`)
+- ❌ Any crate → internal modules of another crate (anything beyond the `lib.rs` API)
+- ❌ `myhealth-mcp` → `myhealth-ui` (MCP does not depend on UI)
+- ❌ `myhealth-ui` → `myhealth-mcp` (UI does not require the MCP stack to launch the setup wizard)
+- ❌ Cycle: `A → B → A` of any length
 
-## Layer/Module Communication
+## Layer/module communication
 
-- **Через trait objects з `myhealth-core::ports`.** Higher-level crates не знають конкретні impl-и (наприклад, `ConsentGateway` приймає `Arc<dyn AuditSink>`, не `Arc<SqliteAuditSink>`).
-- **Composition root — `myhealth-cli/src/main.rs`.** Тут єдине місце, де конкретні адаптери wired у trait objects і передаються у `McpServer::new(...)`, `ConsentGateway::new(...)`, `UiServer::new(...)`.
-- **Async через `tokio` channels** (`mpsc`/`broadcast`) для cross-component notifications (наприклад, audit-events → UI WebSocket).
-- **Domain events** — `myhealth-core::events::DomainEvent` enum; emit-ить consent gateway, споживає UI (для live notifications) і audit (для запису).
-- **No global state.** Жодного `static mut`, `lazy_static!` для shared state. Усі залежності injecting through constructors.
-- **Helper script для перевірки meж:** `scripts/check-deps.sh` парсить `Cargo.toml` усіх crates і fail-ить, якщо знайдено заборонену залежність.
+- **Through trait objects from `myhealth-core::ports`.** Higher-level crates do not know concrete impls (e.g. `ConsentGateway` accepts `Arc<dyn AuditSink>`, not `Arc<SqliteAuditSink>`).
+- **Composition root — `myhealth-cli/src/main.rs`.** This is the single place where concrete adapters are wired into trait objects and passed into `McpServer::new(...)`, `ConsentGateway::new(...)`, `UiServer::new(...)`.
+- **Async via `tokio` channels** (`mpsc`/`broadcast`) for cross-component notifications (e.g. audit events → UI WebSocket).
+- **Domain events** — `myhealth-core::events::DomainEvent` enum; emitted by the consent gateway, consumed by the UI (for live notifications) and by audit (for recording).
+- **No global state.** No `static mut` or `lazy_static!` for shared state. All dependencies are injected through constructors.
+- **Helper script for boundary checking:** `scripts/check-deps.sh` parses `Cargo.toml` of all crates and fails if it finds a forbidden dependency.
 
-## Key Principles
+## Key principles
 
-1. **Hard module boundaries — `lib.rs` як єдиний entry point.** Усі публічні типи/функції re-export-яться з `lib.rs`. Внутрішні модулі (`mod foo;`) — `pub(crate)`, не `pub`.
-2. **Domain crate `myhealth-core` — pure.** Без I/O, без async runtime, без serde на rest-API типах. Тільки FHIR-aligned моделі, ports-traits, errors.
-3. **Hexagonal: traits у `core`, impl-и в адаптерах.** Кожен adapter (FHIR source, MCP transport, audit sink, store backend) — окремий crate або subdirectory з єдиним trait impl.
-4. **Composition root один — `myhealth-cli/src/main.rs`.** Жоден crate-бібліотека не створює "default" instances своїх dependencies.
-5. **Trust boundaries = port boundaries.** Кожна границя довіри (UI ↔ Consent, MCP ↔ Consent, Consent ↔ Store, Anything ↔ Audit) — окремий trait у `myhealth-core::ports`.
-6. **Errors crate-local через `thiserror`.** Жодного `Box<dyn Error>` у public API крім `myhealth-cli`. Конверсії — через `From` impl у каркасних crates.
-7. **No `unsafe` без ADR.** `unsafe` блок дозволено тільки з прив'язкою до конкретного ADR у `docs/adr/`.
-8. **Test pyramid: unit (per crate) → property (`proptest`) → integration (`tests/e2e/`) → bench (`tests/benches/`).** Кожен port має mock impl у `myhealth-core::testing` (feature-flag `testing`) для unit-тестів higher-level crates.
+1. **Hard module boundaries — `lib.rs` as the single entry point.** All public types and functions are re-exported from `lib.rs`. Internal modules (`mod foo;`) are `pub(crate)`, not `pub`.
+2. **Domain crate `myhealth-core` is pure.** No I/O, no async runtime, no serde on REST-API types. Only FHIR-aligned models, ports/traits, errors.
+3. **Hexagonal: traits in `core`, impls in adapters.** Each adapter (FHIR source, MCP transport, audit sink, store backend) is a separate crate or subdirectory with a single trait impl.
+4. **One composition root — `myhealth-cli/src/main.rs`.** No library crate creates "default" instances of its dependencies.
+5. **Trust boundaries = port boundaries.** Every trust boundary (UI ↔ Consent, MCP ↔ Consent, Consent ↔ Store, Anything ↔ Audit) is a separate trait in `myhealth-core::ports`.
+6. **Crate-local errors via `thiserror`.** No `Box<dyn Error>` in any public API except `myhealth-cli`. Conversions are done via `From` impls in the wrapper crates.
+7. **No `unsafe` without an ADR.** An `unsafe` block is allowed only when tied to a specific ADR in `docs/adr/`.
+8. **Test pyramid: unit (per crate) → property (`proptest`) → integration (`tests/e2e/`) → bench (`tests/benches/`).** Each port has a mock impl in `myhealth-core::testing` (feature-flag `testing`) for unit tests of higher-level crates.
 
-## Code Examples
+## Code examples
 
-### Приклад 1 — Port (trait) у `myhealth-core`
+### Example 1 — Port (trait) in `myhealth-core`
 
 ```rust
 // crates/myhealth-core/src/ports/fhir_importer.rs
@@ -171,15 +171,15 @@ use async_trait::async_trait;
 /// Implementations live in `crates/adapters/*` and depend ONLY on `myhealth-core`.
 #[async_trait]
 pub trait FhirImporter: Send + Sync {
-    /// Stable identifier для аудит-логу (наприклад, "ua-nszu", "ee-digilugu").
+    /// Stable identifier for the audit log (e.g. "ua-nszu", "ee-digilugu").
     fn source_id(&self) -> &'static str;
 
-    /// Parse + normalize. PHI ніколи не потрапляє у CoreError.
+    /// Parse + normalize. PHI never leaks into CoreError.
     async fn import(&self, bundle: RawBundle) -> Result<ImportSummary, CoreError>;
 }
 ```
 
-### Приклад 2 — Adapter (trait impl) у `crates/adapters/adapter-ee-digilugu/`
+### Example 2 — Adapter (trait impl) in `crates/adapters/adapter-ee-digilugu/`
 
 ```rust
 // crates/adapters/adapter-ee-digilugu/src/lib.rs
@@ -207,15 +207,15 @@ impl FhirImporter for DigiluguAdapter {
 
     async fn import(&self, bundle: RawBundle) -> Result<ImportSummary, CoreError> {
         // 1. CDA→FHIR transform (legacy records)
-        // 2. Schema validation проти FHIR R4
+        // 2. Schema validation against FHIR R4
         // 3. Idempotency check (FR-1.5)
-        // 4. Build ImportSummary без PHI у Display/Debug
+        // 4. Build ImportSummary without PHI in Display/Debug
         todo!()
     }
 }
 ```
 
-### Приклад 3 — Composition root у `myhealth-cli/src/main.rs`
+### Example 3 — Composition root in `myhealth-cli/src/main.rs`
 
 ```rust
 // crates/myhealth-cli/src/main.rs
@@ -257,28 +257,28 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn read_passphrase_securely() -> anyhow::Result<SecretString> {
-    todo!("rpassword або platform keychain")
+    todo!("rpassword or platform keychain")
 }
 ```
 
-### Приклад 4 — Заборонена cross-module reach-in (НЕ робити)
+### Example 4 — Forbidden cross-module reach-in (DO NOT do)
 
 ```rust
-// ❌ ЗАБОРОНЕНО: тягнути внутрішній модуль чужого crate
-use myhealth_store::encryption::derive_key; // pub(crate), не pub — compile error
-use myhealth_consent::token::sign_jwt;       // те саме
+// ❌ FORBIDDEN: pulling an internal module of another crate
+use myhealth_store::encryption::derive_key; // pub(crate), not pub — compile error
+use myhealth_consent::token::sign_jwt;       // same
 
-// ❌ ЗАБОРОНЕНО: adapter залежить від store
+// ❌ FORBIDDEN: an adapter depending on the store
 // crates/adapters/adapter-ee-digilugu/Cargo.toml
 [dependencies]
 myhealth-core = { path = "../../myhealth-core" }
 myhealth-store = { path = "../../myhealth-store" }   # ← Forbidden!
 
-// ❌ ЗАБОРОНЕНО: prod код панікує
-let token = consent.issue(&scope).unwrap(); // .unwrap() заборонений у production path
+// ❌ FORBIDDEN: prod code panicking
+let token = consent.issue(&scope).unwrap(); // .unwrap() forbidden in production path
 ```
 
-### Приклад 5 — Mock-port для unit-тесту (`myhealth-core::testing`)
+### Example 5 — Mock port for a unit test (`myhealth-core::testing`)
 
 ```rust
 // crates/myhealth-core/src/testing/mod.rs (feature = "testing")
@@ -309,15 +309,15 @@ impl AuditSink for InMemoryAuditSink {
 }
 ```
 
-## Anti-Patterns
+## Anti-patterns
 
-- ❌ **Reach-in через `pub` для зручності** — якщо хочеться `pub use crate::store::encryption::derive_key`, значить треба новий port у `myhealth-core`.
-- ❌ **Adapter знає про інший adapter** — `adapter-ua-nszu` ніколи не імпортує `adapter-ee-digilugu`. Common логіку — у `myhealth-core`.
-- ❌ **`myhealth-core` тягне `tokio`/`axum`/`rusqlite`** — domain crate має бути runtime-agnostic. Async traits — через `async_trait` (zero-cost для trait objects).
-- ❌ **Global state (`lazy_static!`, `OnceCell`) для dependencies** — усе через DI у composition root.
-- ❌ **Циклічна залежність (A → B → A)** — рефакторити у спільний `myhealth-core` тип.
-- ❌ **PHI у `Display`/`Debug` для domain types** — використовувати редактовані `#[derive(Debug)]` через `secrecy` або custom impl, що ховає тіло.
-- ❌ **`.unwrap()` / `.expect()` у production path** (включаючи `?` на `Option` без причини). Дозволено тільки у тестах і у `main.rs` для startup config.
-- ❌ **Виносити Audit Log у окремий процес у phase 1** — навіть якщо хочеться. Modular Monolith готовий до extraction, але phase 1 deployment — single binary.
-- ❌ **Skip-layer виклики** — UI handler ніколи не дзвонить `SqliteStore` напряму, тільки через `RecordStore` trait, і тільки після проходження через Consent Gateway де доречно.
-- ❌ **Створювати `Arc<dyn Trait>` поза composition root** — конструктори бібліотечних crates приймають вже готові trait objects.
+- ❌ **Reach-in via `pub` for convenience** — if you find yourself wanting `pub use crate::store::encryption::derive_key`, you need a new port in `myhealth-core`.
+- ❌ **An adapter knowing about another adapter** — `adapter-ua-nszu` never imports `adapter-ee-digilugu`. Common logic lives in `myhealth-core`.
+- ❌ **`myhealth-core` pulling in `tokio`/`axum`/`rusqlite`** — the domain crate must be runtime-agnostic. Async traits go through `async_trait` (zero-cost for trait objects).
+- ❌ **Global state (`lazy_static!`, `OnceCell`) for dependencies** — everything via DI in the composition root.
+- ❌ **Cyclic dependency (A → B → A)** — refactor it into a shared `myhealth-core` type.
+- ❌ **PHI in `Display`/`Debug` for domain types** — use redacted `#[derive(Debug)]` via `secrecy` or a custom impl that hides the body.
+- ❌ **`.unwrap()` / `.expect()` in production paths** (including `?` on `Option` without reason). Allowed only in tests and in `main.rs` for startup config.
+- ❌ **Splitting the Audit Log into a separate process in phase 1** — even when tempted. The Modular Monolith is ready for extraction, but phase 1 deployment is a single binary.
+- ❌ **Skip-layer calls** — a UI handler never calls `SqliteStore` directly, only via the `RecordStore` trait, and only after going through the Consent Gateway where appropriate.
+- ❌ **Creating `Arc<dyn Trait>` outside the composition root** — library-crate constructors accept already-wired trait objects.
