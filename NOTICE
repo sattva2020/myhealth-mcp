@@ -1,0 +1,66 @@
+MyHealth-Europe
+===============
+
+Open-source Model Context Protocol (MCP) server giving European citizens
+self-hosted control over their health data, with consent-gated access for
+any AI agent.
+
+Copyright 2026 MyHealth-Europe contributors.
+
+This product includes software developed by the MyHealth-Europe project and
+its co-founders:
+
+  - Ruslan Hryban  (Project Lead, Principal Engineer)
+  - Oleksandr Suraiev  (Coordination Lead)
+  - Dmytro Myroshnykov  (EU Networking, Business Development)
+  - Tetiana Hryban  (Domain Advisor, Cross-border Navigation)
+
+Licensed under multiple open-source licenses depending on the component:
+
+  - MCP server core, FHIR adapters, OAuth 2.1 consent gateway,
+    reference UI client, build scripts, CI configuration
+        ........................  Apache License, Version 2.0
+  - Reference cross-border navigation agent
+        ........................  GNU Affero General Public License v3.0 or later
+  - Documentation, replication kit, design documents
+        ........................  Creative Commons Attribution-ShareAlike 4.0
+  - Synthetic FHIR test datasets
+        ........................  Creative Commons Zero 1.0 Universal
+
+See LICENSING.md for the full multi-license structure and rationale.
+See docs/07-licensing-strategy.md for the design decisions behind the split.
+Per-file SPDX identifiers in source files give the canonical answer for
+each individual file (REUSE Specification 3.0).
+
+Funding acknowledgement
+-----------------------
+
+This project has applied for funding from the European Union's Next Generation
+Internet (NGI) initiative through the NLnet Foundation NGI Zero Commons Fund.
+If awarded, NLnet's contribution will be acknowledged here with the grant
+identifier upon signing the Memorandum of Understanding.
+
+Trademark notice
+----------------
+
+"MyHealth-Europe" is the working name of the project. Trademark policy is
+documented in docs/07-licensing-strategy.md, section 7 (subject to legal
+review at milestone M3). Software licensing under the above licenses does
+not grant trademark rights; please see the trademark policy before using
+the project name commercially or in a way that could imply endorsement.
+
+Third-party attributions
+------------------------
+
+This product depends on third-party software components. Each direct
+dependency is listed in `Cargo.toml` and `Cargo.lock`; license metadata for
+the full dependency tree is enforced by `deny.toml` (cargo-deny) and is
+visible in the generated dependency report at `dist/third-party-licenses.txt`
+in any release build.
+
+Contact
+-------
+
+  E-mail:    ruslan.griban@gmail.com
+  Project:   https://griban.dev/projects/myhealth-europe/  (pre-award sub-path on applicant's developer site; dedicated domain may follow post-award)
+  Code:      see Cargo.toml `repository` field

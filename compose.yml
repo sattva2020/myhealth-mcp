@@ -1,0 +1,46 @@
+# compose.yml — Base configuration shared between dev and prod.
+#
+# Dev:   docker compose up                                                          (auto-merges compose.override.yml)
+# Prod:  docker compose -f compose.yml -f compose.production.yml up -d
+#
+# Single-service deployment: myhealth-europe is a single Rust binary with
+# embedded SQLCipher store. No external database / cache / queue containers.
+
+name: ${COMPOSE_PROJECT_NAME:-myhealth-europe}
+
+services:
+  app:
+    build:
+      context: .
+      target: production
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-unknown}
+    image: ${DOCKER_IMAGE:-myhealth-europe}:${VERSION:-dev}
+    env_file: .env
+    environment:
+      MYHEALTH_BIND: 0.0.0.0:7777
+      MYHEALTH_DATA_DIR: /var/lib/myhealth
+      MYHEALTH_LOG_DIR: /var/log/myhealth
+      RUST_LOG: ${RUST_LOG:-info}
+    volumes:
+      - myhealth_data:/var/lib/myhealth          # SQLCipher store (encrypted at rest)
+      - myhealth_logs:/var/log/myhealth          # Structured JSON logs (no PHI)
+    ports:
+      - "${APP_PORT:-7777}:7777"                 # Local UI + MCP SSE/HTTP transport
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:7777/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - frontend
+
+volumes:
+  myhealth_data:
+  myhealth_logs:
+
+networks:
+  frontend:
+    driver: bridge

@@ -1,0 +1,67 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Docker (prevent recursive copy)
+Dockerfile*
+docker-compose*
+compose*
+.dockerignore
+
+# Rust build artifacts (rebuilt inside the container)
+target/
+**/target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/WixTools/
+
+# Environment files (secrets)
+.env
+.env.*
+!.env.example
+
+# Local databases / runtime state
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+runtime-data/
+secrets/
+*.key
+*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# AI Factory project context — not needed at runtime
+.ai-factory/
+.ai-factory.json
+.claude/
+.codex/
+AGENTS.md
+README.md
+CHANGELOG.md
+LICENSE
+
+# Documentation tree (not bundled in runtime image)
+docs/
+
+# Pre-implementation grant drafts (won't exist after M1 start, but ignore proactively)
+NGI-CommonsFund-*.md

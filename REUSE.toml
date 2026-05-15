@@ -1,0 +1,76 @@
+version = 1
+
+# REUSE Specification 3.0 — license metadata for files that do not carry
+# their own SPDX header. Source files SHOULD carry inline SPDX headers
+# and not depend on this file; the rules below are the fallback.
+#
+# See LICENSING.md for the project-wide license structure.
+# See LICENSES/ for canonical license text.
+# See docs/07-licensing-strategy.md for the design rationale.
+
+# ---------------------------------------------------------------------------
+# Documentation, design docs, top-level prose
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = ["docs/**", "README.md", "LICENSING.md", "RELEASING.md", "AGENTS.md", "NOTICE"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 MyHealth-Europe contributors"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# ---------------------------------------------------------------------------
+# Build, infrastructure, configuration — Apache 2.0 (matches dominant code license)
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = [
+  "justfile",
+  "Cargo.toml",
+  "Cargo.lock",
+  "Dockerfile",
+  ".dockerignore",
+  "compose.yml",
+  "compose.override.yml",
+  "compose.production.yml",
+  "rust-toolchain.toml",
+  "clippy.toml",
+  "deny.toml",
+  ".env.example",
+  ".gitignore",
+  ".gitattributes",
+  ".mcp.json",
+  ".github/**",
+  "scripts/**",
+  "crates/*/Cargo.toml",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 MyHealth-Europe contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+# ---------------------------------------------------------------------------
+# Synthetic test data (when added) — zero-friction reuse
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = ["testdata/**", "crates/*/tests/fixtures/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 MyHealth-Europe contributors"
+SPDX-License-Identifier = "CC0-1.0"
+
+# ---------------------------------------------------------------------------
+# Project-internal AI agent configuration — Apache 2.0
+# (these files configure the AI-Factory tooling and Codex/Claude integrations;
+# they are not the project's source of value but should be openly inspectable)
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = [".ai-factory/**", ".ai-factory.json", ".claude/**", ".codex/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 MyHealth-Europe contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+# ---------------------------------------------------------------------------
+# Reference agent (when added) — AGPL 3.0 or later
+# Block is pre-declared so the policy is visible before the crate is created.
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = ["crates/reference-agent/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 MyHealth-Europe contributors"
+SPDX-License-Identifier = "AGPL-3.0-or-later"

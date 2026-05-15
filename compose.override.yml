@@ -1,0 +1,25 @@
+# compose.override.yml — Development overrides (auto-merged by `docker compose up`).
+#
+# Mounts source code into the container so `cargo watch` rebuilds on every change.
+# Persists `target/` in a named volume to keep cargo cache warm across restarts.
+
+services:
+  app:
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/app                                   # Source bind-mount for hot reload
+      - cargo_target:/app/target                 # Keep target/ outside host FS for speed
+      - cargo_registry:/usr/local/cargo/registry # Cache crates between rebuilds
+    environment:
+      RUST_LOG: ${RUST_LOG:-debug,myhealth=trace}
+      RUST_BACKTRACE: "1"
+      MYHEALTH_DEV_MODE: "1"
+    command: ["cargo", "watch", "-q", "-c", "-x", "run -p myhealth-cli -- serve --bind 0.0.0.0:7777"]
+    ports:
+      - "${APP_PORT:-7777}:7777"
+
+volumes:
+  cargo_target:
+  cargo_registry:
