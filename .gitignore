@@ -37,3 +37,11 @@ build/
 *.db-shm
 *.db-wal
 runtime-data/
+
+# AI-tooling internal state (local-only, not public-repo artifacts)
+.ai-factory/
+.ai-factory.json
+.claude/
+.codex/
+.mcp.json
+AGENTS.md
